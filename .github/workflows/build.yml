@@ -1,0 +1,100 @@
+name: Build and Verify Package
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build Python Package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine wheel setuptools
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Verify build outputs
+      run: |
+        ls -lh dist/
+        echo "Checking for distribution files..."
+        if [ ! -f dist/*.whl ]; then
+          echo "Error: No wheel file found!"
+          exit 1
+        fi
+        if [ ! -f dist/*.tar.gz ]; then
+          echo "Error: No source distribution found!"
+          exit 1
+        fi
+        echo "Build outputs verified successfully!"
+
+    - name: Check package metadata
+      run: |
+        pip install setuptools
+        python setup.py check --strict --metadata
+
+    - name: Validate package with twine
+      run: |
+        twine check dist/*
+
+    - name: Test package installation
+      run: |
+        pip install dist/*.whl
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: matrix.python-version == '3.11'
+      with:
+        name: dist
+        path: dist/
+        retention-days: 7
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+
+    # OIDC permissions for trusted publishing
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Publish to PyPI using OIDC
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        verbose: true
+        print-hash: true
