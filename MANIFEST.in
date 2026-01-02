@@ -1,0 +1,36 @@
+# Include documentation and metadata files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include pyproject.toml
+include setup.py
+
+# Include type information
+include warspite_financial/py.typed
+
+# Exclude development and build files
+exclude .gitignore
+exclude requirements-dev.txt
+exclude verify_setup.py
+exclude test_changes.py
+
+# Exclude test files and directories
+recursive-exclude tests *
+recursive-exclude .pytest_cache *
+recursive-exclude .hypothesis *
+
+# Exclude development directories
+recursive-exclude .vscode *
+recursive-exclude .kiro *
+recursive-exclude venv *
+recursive-exclude __pycache__ *
+recursive-exclude *.egg-info *
+
+# Exclude build artifacts
+recursive-exclude build *
+recursive-exclude dist *
+
+# Include all Python files in the package
+recursive-include warspite_financial *.py
+recursive-include warspite_financial *.pyi

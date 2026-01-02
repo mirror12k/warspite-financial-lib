@@ -1,0 +1,123 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warspite-financial"
+version = "0.1.0"
+description = "A comprehensive Python library for financial data processing, trading strategies, and emulation"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "mirror12k"}
+]
+maintainers = [
+    {name = "mirror12k"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+keywords = [
+    "finance", 
+    "trading", 
+    "backtesting", 
+    "strategies", 
+    "market-data",
+    "quantitative-finance",
+    "algorithmic-trading",
+    "financial-analysis",
+    "portfolio-management",
+    "risk-management"
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "pandas>=1.3.0",
+    "matplotlib>=3.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "hypothesis>=6.0.0",
+    "pytest-cov>=2.10.0",
+]
+providers = [
+    "yfinance>=0.1.70",
+    "requests>=2.25.0",
+]
+all = [
+    "warspite-financial[dev,providers]"
+]
+
+[project.scripts]
+warspite-financial-cli = "warspite_financial.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/warspite-financial/warspite-financial"
+Repository = "https://github.com/warspite-financial/warspite-financial"
+Documentation = "https://warspite-financial.readthedocs.io"
+"Bug Tracker" = "https://github.com/warspite-financial/warspite-financial/issues"
+Changelog = "https://github.com/warspite-financial/warspite-financial/blob/main/CHANGELOG.md"
+"Source Code" = "https://github.com/warspite-financial/warspite-financial"
+
+[tool.setuptools.packages.find]
+include = ["warspite_financial*"]
+exclude = ["tests*", "docs*", "examples*"]
+
+[tool.setuptools.package-data]
+warspite_financial = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+]
+markers = [
+    "unit: Unit tests",
+    "property: Property-based tests", 
+    "integration: Integration tests",
+    "slow: Slow running tests",
+]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["warspite_financial"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
