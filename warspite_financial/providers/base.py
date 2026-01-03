@@ -302,6 +302,23 @@ class BaseProvider(ABC):
         return standardized_data
 
 
+class Order:
+    """Represents a trading order."""
+    
+    def __init__(self, order_id: str, instrument: str, units: float, order_type: str, 
+                 state: str, create_time: str, price: Optional[float] = None, 
+                 time_in_force: Optional[str] = None, client_extensions: Optional[Dict] = None):
+        self.order_id = order_id
+        self.instrument = instrument
+        self.units = units
+        self.order_type = order_type
+        self.state = state
+        self.create_time = create_time
+        self.price = price
+        self.time_in_force = time_in_force
+        self.client_extensions = client_extensions or {}
+
+
 class OrderResult:
     """Represents the result of a trading order."""
     
@@ -417,3 +434,70 @@ class TradingProvider(BaseProvider):
             ConnectionError: If trading provider is unreachable
         """
         pass
+    
+    def get_orders(self, instrument: Optional[str] = None, state: str = "PENDING", 
+                   count: int = 50, order_ids: Optional[List[str]] = None) -> List[Order]:
+        """
+        Get orders with optional filtering.
+        
+        Args:
+            instrument: Filter orders by instrument
+            state: Filter by order state ('PENDING', 'FILLED', 'CANCELLED', 'ALL')
+            count: Maximum number of orders to return
+            order_ids: List of specific order IDs to retrieve
+            
+        Returns:
+            List of Order objects
+            
+        Raises:
+            ConnectionError: If trading provider is unreachable
+            NotImplementedError: If provider doesn't support order retrieval
+        """
+        raise NotImplementedError("Order retrieval not implemented by this provider")
+    
+    def get_pending_orders(self) -> List[Order]:
+        """
+        Get all pending orders.
+        
+        Returns:
+            List of Order objects with state 'PENDING'
+            
+        Raises:
+            ConnectionError: If trading provider is unreachable
+            NotImplementedError: If provider doesn't support order retrieval
+        """
+        raise NotImplementedError("Pending order retrieval not implemented by this provider")
+    
+    def get_order(self, order_id: str) -> Optional[Order]:
+        """
+        Get a specific order by ID.
+        
+        Args:
+            order_id: The order ID to retrieve
+            
+        Returns:
+            Order object if found, None otherwise
+            
+        Raises:
+            ConnectionError: If trading provider is unreachable
+            ValueError: If order_id is invalid
+            NotImplementedError: If provider doesn't support order retrieval
+        """
+        raise NotImplementedError("Individual order retrieval not implemented by this provider")
+    
+    def cancel_order(self, order_id: str) -> bool:
+        """
+        Cancel a specific order.
+        
+        Args:
+            order_id: The order ID to cancel
+            
+        Returns:
+            True if order was successfully cancelled, False otherwise
+            
+        Raises:
+            ConnectionError: If trading provider is unreachable
+            ValueError: If order_id is invalid
+            NotImplementedError: If provider doesn't support order cancellation
+        """
+        raise NotImplementedError("Order cancellation not implemented by this provider")

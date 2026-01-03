@@ -11,11 +11,13 @@ from .renderers import (
     PDFRenderer,
     CSVRenderer
 )
+from .helpers import create_visualization
 
 __all__ = [
     'WarspiteDatasetRenderer',
     'MatplotlibRenderer', 
     'ASCIIRenderer',
     'PDFRenderer',
-    'CSVRenderer'
+    'CSVRenderer',
+    'create_visualization'
 ]

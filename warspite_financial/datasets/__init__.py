@@ -6,5 +6,6 @@ This module contains dataset management and rendering functionality.
 
 from .dataset import WarspiteDataset
 from .serializer import WarspiteDatasetSerializer
+from .helpers import create_dataset_from_provider
 
-__all__ = ["WarspiteDataset", "WarspiteDatasetSerializer"]
+__all__ = ["WarspiteDataset", "WarspiteDatasetSerializer", "create_dataset_from_provider"]

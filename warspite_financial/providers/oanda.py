@@ -14,7 +14,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .base import TradingProvider, OrderResult, AccountInfo, Position
+from .base import TradingProvider, OrderResult, AccountInfo, Position, Order
 
 
 class OANDAProvider(TradingProvider):
@@ -278,6 +278,189 @@ class OANDAProvider(TradingProvider):
             return '_' in symbol and len(symbol.split('_')) == 2
     
     # Trading Provider methods
+    
+    def get_orders(self, instrument: Optional[str] = None, state: str = "PENDING", 
+                   count: int = 50, order_ids: Optional[List[str]] = None) -> List[Order]:
+        """
+        Get orders from OANDA account with optional filtering.
+        
+        Args:
+            instrument: Filter orders by instrument (e.g., 'EUR_USD')
+            state: Filter by order state ('PENDING', 'FILLED', 'CANCELLED', 'ALL')
+            count: Maximum number of orders to return (default 50, max 500)
+            order_ids: List of specific order IDs to retrieve
+            
+        Returns:
+            List of Order objects
+            
+        Raises:
+            ConnectionError: If API request fails
+            ValueError: If parameters are invalid
+        """
+        if count > 500:
+            raise ValueError("Maximum count is 500")
+        
+        try:
+            endpoint = f"/v3/accounts/{self.account_id}/orders"
+            params = {
+                'count': count
+            }
+            
+            # Add optional filters
+            if instrument:
+                params['instrument'] = instrument
+            if state != "ALL":
+                params['state'] = state
+            if order_ids:
+                params['ids'] = ','.join(order_ids)
+            
+            response = self._make_request('GET', endpoint, params=params)
+            
+            if 'orders' not in response:
+                raise ValueError("No orders data returned from OANDA")
+            
+            orders = []
+            for order_data in response['orders']:
+                order = self._parse_order_data(order_data)
+                orders.append(order)
+            
+            return orders
+            
+        except Exception as e:
+            if isinstance(e, (ConnectionError, ValueError, PermissionError)):
+                raise
+            else:
+                raise ConnectionError(f"Failed to retrieve orders: {str(e)}")
+    
+    def get_pending_orders(self) -> List[Order]:
+        """
+        Get all pending orders from OANDA account.
+        
+        Returns:
+            List of Order objects with state 'PENDING'
+            
+        Raises:
+            ConnectionError: If API request fails
+        """
+        try:
+            endpoint = f"/v3/accounts/{self.account_id}/pendingOrders"
+            response = self._make_request('GET', endpoint)
+            
+            if 'orders' not in response:
+                raise ValueError("No orders data returned from OANDA")
+            
+            orders = []
+            for order_data in response['orders']:
+                order = self._parse_order_data(order_data)
+                orders.append(order)
+            
+            return orders
+            
+        except Exception as e:
+            if isinstance(e, (ValueError, PermissionError)):
+                raise
+            else:
+                raise ConnectionError(f"Failed to retrieve pending orders: {str(e)}")
+    
+    def get_order(self, order_id: str) -> Optional[Order]:
+        """
+        Get a specific order by ID from OANDA account.
+        
+        Args:
+            order_id: The order ID or client order ID (prefixed with @)
+            
+        Returns:
+            Order object if found, None otherwise
+            
+        Raises:
+            ConnectionError: If API request fails
+            ValueError: If order_id is invalid
+        """
+        if not order_id:
+            raise ValueError("Order ID is required")
+        
+        try:
+            endpoint = f"/v3/accounts/{self.account_id}/orders/{order_id}"
+            response = self._make_request('GET', endpoint)
+            
+            if 'order' not in response:
+                return None
+            
+            return self._parse_order_data(response['order'])
+            
+        except ValueError as e:
+            if "Resource not found" in str(e):
+                return None
+            raise
+        except Exception as e:
+            if isinstance(e, PermissionError):
+                raise
+            else:
+                raise ConnectionError(f"Failed to retrieve order {order_id}: {str(e)}")
+    
+    def cancel_order(self, order_id: str) -> bool:
+        """
+        Cancel a specific order.
+        
+        Args:
+            order_id: The order ID or client order ID (prefixed with @) to cancel
+            
+        Returns:
+            True if order was successfully cancelled, False otherwise
+            
+        Raises:
+            ConnectionError: If API request fails
+            ValueError: If order_id is invalid
+        """
+        if not order_id:
+            raise ValueError("Order ID is required")
+        
+        try:
+            endpoint = f"/v3/accounts/{self.account_id}/orders/{order_id}/cancel"
+            response = self._make_request('PUT', endpoint)
+            
+            # Check if cancellation was successful
+            return 'orderCancelTransaction' in response
+            
+        except Exception as e:
+            if isinstance(e, (ValueError, PermissionError)):
+                raise
+            else:
+                raise ConnectionError(f"Failed to cancel order {order_id}: {str(e)}")
+    
+    def _parse_order_data(self, order_data: Dict[str, Any]) -> Order:
+        """
+        Parse order data from OANDA API response into Order object.
+        
+        Args:
+            order_data: Raw order data from OANDA API
+            
+        Returns:
+            Order object
+        """
+        order_id = order_data.get('id', '')
+        instrument = order_data.get('instrument', '')
+        units = float(order_data.get('units', 0))
+        order_type = order_data.get('type', '')
+        state = order_data.get('state', '')
+        create_time = order_data.get('createTime', '')
+        price = None
+        if 'price' in order_data:
+            price = float(order_data['price'])
+        time_in_force = order_data.get('timeInForce')
+        client_extensions = order_data.get('clientExtensions', {})
+        
+        return Order(
+            order_id=order_id,
+            instrument=instrument,
+            units=units,
+            order_type=order_type,
+            state=state,
+            create_time=create_time,
+            price=price,
+            time_in_force=time_in_force,
+            client_extensions=client_extensions
+        )
     
     def place_order(self, symbol: str, quantity: float, order_type: str = 'market') -> OrderResult:
         """

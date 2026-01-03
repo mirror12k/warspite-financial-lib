@@ -14,7 +14,7 @@ import json
 import requests
 
 from warspite_financial.providers.oanda import OANDAProvider
-from warspite_financial.providers.base import OrderResult, AccountInfo, Position
+from warspite_financial.providers.base import OrderResult, AccountInfo, Position, Order
 
 
 class TestOANDAProviderInitialization:
@@ -817,3 +817,298 @@ class TestOANDAProviderIntegration:
         future_end_date = future_date.replace(day=future_date.day + 1)
         with pytest.raises(ValueError, match="Start date cannot be in the future"):
             provider.validate_date_range(future_date, future_end_date)
+
+
+class TestOANDAProviderOrderManagement:
+    """Test OANDAProvider order management functionality."""
+    
+    @pytest.fixture
+    def provider(self):
+        """Create OANDAProvider instance for testing."""
+        return OANDAProvider("test_token", "test_account", practice=True)
+    
+    @pytest.fixture
+    def mock_orders_response(self):
+        """Create mock orders response."""
+        return {
+            "orders": [
+                {
+                    "id": "12345",
+                    "instrument": "EUR_USD",
+                    "units": "1000",
+                    "type": "LIMIT",
+                    "state": "PENDING",
+                    "createTime": "2023-01-01T10:00:00.000000000Z",
+                    "price": "1.1000",
+                    "timeInForce": "GTC",
+                    "clientExtensions": {
+                        "id": "my_order_1",
+                        "tag": "strategy_1",
+                        "comment": "Test order"
+                    }
+                },
+                {
+                    "id": "12346",
+                    "instrument": "GBP_JPY",
+                    "units": "-500",
+                    "type": "MARKET_IF_TOUCHED",
+                    "state": "PENDING",
+                    "createTime": "2023-01-01T11:00:00.000000000Z",
+                    "price": "150.0",
+                    "timeInForce": "GTC"
+                }
+            ]
+        }
+    
+    def test_get_orders_success(self, provider, mock_orders_response):
+        """Test successful retrieval of orders."""
+        with patch.object(provider, '_make_request', return_value=mock_orders_response):
+            orders = provider.get_orders()
+            
+            assert len(orders) == 2
+            
+            # Check first order
+            order1 = orders[0]
+            assert isinstance(order1, Order)
+            assert order1.order_id == "12345"
+            assert order1.instrument == "EUR_USD"
+            assert order1.units == 1000.0
+            assert order1.order_type == "LIMIT"
+            assert order1.state == "PENDING"
+            assert order1.price == 1.1000
+            assert order1.time_in_force == "GTC"
+            assert order1.client_extensions["id"] == "my_order_1"
+            
+            # Check second order
+            order2 = orders[1]
+            assert order2.order_id == "12346"
+            assert order2.instrument == "GBP_JPY"
+            assert order2.units == -500.0
+            assert order2.order_type == "MARKET_IF_TOUCHED"
+            assert order2.state == "PENDING"
+            assert order2.price == 150.0
+    
+    def test_get_orders_with_filters(self, provider, mock_orders_response):
+        """Test get_orders with various filters."""
+        with patch.object(provider, '_make_request', return_value=mock_orders_response) as mock_request:
+            # Test with instrument filter
+            provider.get_orders(instrument="EUR_USD")
+            call_args = mock_request.call_args
+            assert call_args[1]['params']['instrument'] == "EUR_USD"
+            
+            # Test with state filter
+            provider.get_orders(state="FILLED")
+            call_args = mock_request.call_args
+            assert call_args[1]['params']['state'] == "FILLED"
+            
+            # Test with count
+            provider.get_orders(count=100)
+            call_args = mock_request.call_args
+            assert call_args[1]['params']['count'] == 100
+            
+            # Test with order IDs
+            provider.get_orders(order_ids=["12345", "12346"])
+            call_args = mock_request.call_args
+            assert call_args[1]['params']['ids'] == "12345,12346"
+    
+    def test_get_orders_invalid_count(self, provider):
+        """Test get_orders with invalid count parameter."""
+        with pytest.raises(ValueError, match="Maximum count is 500"):
+            provider.get_orders(count=501)
+    
+    def test_get_orders_no_orders_data(self, provider):
+        """Test get_orders when API returns no orders data."""
+        with patch.object(provider, '_make_request', return_value={}):
+            with pytest.raises(ValueError, match="No orders data returned"):
+                provider.get_orders()
+    
+    def test_get_orders_api_error(self, provider):
+        """Test get_orders when API request fails."""
+        with patch.object(provider, '_make_request', side_effect=ConnectionError("API Error")):
+            with pytest.raises(ConnectionError, match="API Error"):
+                provider.get_orders()
+    
+    def test_get_pending_orders_success(self, provider, mock_orders_response):
+        """Test successful retrieval of pending orders."""
+        with patch.object(provider, '_make_request', return_value=mock_orders_response):
+            orders = provider.get_pending_orders()
+            
+            assert len(orders) == 2
+            assert all(order.state == "PENDING" for order in orders)
+    
+    def test_get_pending_orders_api_error(self, provider):
+        """Test get_pending_orders when API request fails."""
+        with patch.object(provider, '_make_request', side_effect=ConnectionError("API Error")):
+            with pytest.raises(ConnectionError, match="Failed to retrieve pending orders"):
+                provider.get_pending_orders()
+    
+    def test_get_order_success(self, provider):
+        """Test successful retrieval of specific order."""
+        mock_response = {
+            "order": {
+                "id": "12345",
+                "instrument": "EUR_USD",
+                "units": "1000",
+                "type": "LIMIT",
+                "state": "PENDING",
+                "createTime": "2023-01-01T10:00:00.000000000Z",
+                "price": "1.1000",
+                "timeInForce": "GTC"
+            }
+        }
+        
+        with patch.object(provider, '_make_request', return_value=mock_response):
+            order = provider.get_order("12345")
+            
+            assert isinstance(order, Order)
+            assert order.order_id == "12345"
+            assert order.instrument == "EUR_USD"
+            assert order.units == 1000.0
+            assert order.price == 1.1000
+    
+    def test_get_order_not_found(self, provider):
+        """Test get_order when order is not found."""
+        with patch.object(provider, '_make_request', side_effect=ValueError("Resource not found")):
+            order = provider.get_order("nonexistent")
+            
+            assert order is None
+    
+    def test_get_order_no_order_data(self, provider):
+        """Test get_order when API returns no order data."""
+        with patch.object(provider, '_make_request', return_value={}):
+            order = provider.get_order("12345")
+            
+            assert order is None
+    
+    def test_get_order_empty_id(self, provider):
+        """Test get_order with empty order ID."""
+        with pytest.raises(ValueError, match="Order ID is required"):
+            provider.get_order("")
+    
+    def test_get_order_api_error(self, provider):
+        """Test get_order when API request fails."""
+        with patch.object(provider, '_make_request', side_effect=ConnectionError("API Error")):
+            with pytest.raises(ConnectionError, match="Failed to retrieve order"):
+                provider.get_order("12345")
+    
+    def test_cancel_order_success(self, provider):
+        """Test successful order cancellation."""
+        mock_response = {
+            "orderCancelTransaction": {
+                "id": "12346",
+                "orderID": "12345",
+                "reason": "CLIENT_REQUEST",
+                "type": "ORDER_CANCEL"
+            }
+        }
+        
+        with patch.object(provider, '_make_request', return_value=mock_response):
+            result = provider.cancel_order("12345")
+            
+            assert result is True
+    
+    def test_cancel_order_no_transaction(self, provider):
+        """Test order cancellation when no cancel transaction is returned."""
+        mock_response = {}
+        
+        with patch.object(provider, '_make_request', return_value=mock_response):
+            result = provider.cancel_order("12345")
+            
+            assert result is False
+    
+    def test_cancel_order_empty_id(self, provider):
+        """Test cancel_order with empty order ID."""
+        with pytest.raises(ValueError, match="Order ID is required"):
+            provider.cancel_order("")
+    
+    def test_cancel_order_api_error(self, provider):
+        """Test cancel_order when API request fails."""
+        with patch.object(provider, '_make_request', side_effect=ConnectionError("API Error")):
+            with pytest.raises(ConnectionError, match="Failed to cancel order"):
+                provider.cancel_order("12345")
+    
+    def test_cancel_order_with_client_id(self, provider):
+        """Test order cancellation using client order ID."""
+        mock_response = {
+            "orderCancelTransaction": {
+                "id": "12346",
+                "orderID": "12345",
+                "clientOrderID": "my_order_1",
+                "reason": "CLIENT_REQUEST",
+                "type": "ORDER_CANCEL"
+            }
+        }
+        
+        with patch.object(provider, '_make_request', return_value=mock_response):
+            result = provider.cancel_order("@my_order_1")
+            
+            assert result is True
+    
+    def test_parse_order_data_complete(self, provider):
+        """Test parsing complete order data."""
+        order_data = {
+            "id": "12345",
+            "instrument": "EUR_USD",
+            "units": "1000",
+            "type": "LIMIT",
+            "state": "PENDING",
+            "createTime": "2023-01-01T10:00:00.000000000Z",
+            "price": "1.1000",
+            "timeInForce": "GTC",
+            "clientExtensions": {
+                "id": "my_order_1",
+                "tag": "strategy_1",
+                "comment": "Test order"
+            }
+        }
+        
+        order = provider._parse_order_data(order_data)
+        
+        assert isinstance(order, Order)
+        assert order.order_id == "12345"
+        assert order.instrument == "EUR_USD"
+        assert order.units == 1000.0
+        assert order.order_type == "LIMIT"
+        assert order.state == "PENDING"
+        assert order.create_time == "2023-01-01T10:00:00.000000000Z"
+        assert order.price == 1.1000
+        assert order.time_in_force == "GTC"
+        assert order.client_extensions["id"] == "my_order_1"
+    
+    def test_parse_order_data_minimal(self, provider):
+        """Test parsing minimal order data."""
+        order_data = {
+            "id": "12345",
+            "instrument": "EUR_USD",
+            "units": "1000",
+            "type": "MARKET",
+            "state": "FILLED",
+            "createTime": "2023-01-01T10:00:00.000000000Z"
+        }
+        
+        order = provider._parse_order_data(order_data)
+        
+        assert isinstance(order, Order)
+        assert order.order_id == "12345"
+        assert order.instrument == "EUR_USD"
+        assert order.units == 1000.0
+        assert order.order_type == "MARKET"
+        assert order.state == "FILLED"
+        assert order.price is None
+        assert order.time_in_force is None
+        assert order.client_extensions == {}
+    
+    def test_parse_order_data_negative_units(self, provider):
+        """Test parsing order data with negative units (sell order)."""
+        order_data = {
+            "id": "12345",
+            "instrument": "EUR_USD",
+            "units": "-1000",
+            "type": "MARKET",
+            "state": "FILLED",
+            "createTime": "2023-01-01T10:00:00.000000000Z"
+        }
+        
+        order = provider._parse_order_data(order_data)
+        
+        assert order.units == -1000.0

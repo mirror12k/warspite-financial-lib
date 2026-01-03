@@ -10,5 +10,16 @@ from .perfect import PerfectStrategy
 from .sma import SMAStrategy
 from .buy_and_hold import BuyAndHoldStrategy
 from .short import ShortStrategy
+from .bollinger_bands import BollingerBandsStrategy
+from .contrarian import ContrarianStrategy
 
-__all__ = ["BaseStrategy", "RandomStrategy", "PerfectStrategy", "SMAStrategy", "BuyAndHoldStrategy", "ShortStrategy"]
+__all__ = [
+    "BaseStrategy", 
+    "RandomStrategy", 
+    "PerfectStrategy", 
+    "SMAStrategy", 
+    "BuyAndHoldStrategy", 
+    "ShortStrategy",
+    "BollingerBandsStrategy",
+    "ContrarianStrategy"
+]

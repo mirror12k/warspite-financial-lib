@@ -5,5 +5,6 @@ This module contains trading emulation and position management functionality.
 """
 
 from .emulator import WarspiteTradingEmulator
+from .helpers import run_strategy_backtest
 
-__all__ = ["WarspiteTradingEmulator"]
+__all__ = ["WarspiteTradingEmulator", "run_strategy_backtest"]
