@@ -822,16 +822,7 @@ Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## Changelog
 
-### Version 0.1.0
-
-- Initial release with core functionality
-- Provider system with BrownianMotion, YFinance, and OANDA support
-- Strategy framework with SMA, Random, and Perfect strategies
-- Trading emulation with cost modeling
-- Command-line interface with interactive trading and ASCII visualization
-- Visualization system with multiple renderers
-- Comprehensive test suite with property-based testing
-- End-to-end workflow examples
+For detailed release notes and version history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Support
 

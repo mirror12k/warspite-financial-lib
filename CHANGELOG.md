@@ -5,6 +5,45 @@ All notable changes to the warspite-financial library will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-01-03
+
+### Added
+
+#### OANDA Provider Enhancements
+- **Order Management**: Comprehensive order management functionality with `get_orders()`, `get_pending_orders()`, `get_order()`, and `cancel_order()` methods
+- **Order Class**: New `Order` class for structured order data representation
+- **Parameter Validation**: Full validation for order IDs and API parameters with descriptive error messages
+
+#### New Trading Strategies
+- **BollingerBandsStrategy**: Technical analysis strategy using Bollinger Bands with configurable period and standard deviation multiplier
+- **ContrarianStrategy**: Mean reversion strategy that trades against strong price movements with customizable lookback periods and thresholds
+
+#### Helper Functions
+- **Dataset Helpers**: `create_dataset_from_provider()` function for streamlined dataset creation
+- **Emulator Helpers**: `run_strategy_backtest()` function for simplified backtesting workflows
+- **Visualization Helpers**: `create_visualization()` function for easy chart generation
+
+### Changed
+
+#### Module Architecture
+- **Simplified Imports**: Refactored `__init__.py` files to use dynamic imports, removing verbose convenience functions
+- **Modular Organization**: Moved helper functions to dedicated modules for better code organization
+- **Cleaner API**: Streamlined public API surface while maintaining backward compatibility
+
+### Fixed
+
+#### Error Handling
+- **OANDA API Errors**: Enhanced error handling for order management operations with specific error types
+- **Strategy Validation**: Improved parameter validation for new trading strategies
+- **Connection Handling**: Better handling of API connection failures and timeouts
+
+### Testing
+
+#### Comprehensive Coverage
+- **Order Management Tests**: Extensive unit tests for all OANDA order operations including edge cases
+- **Strategy Tests**: Complete test coverage for new Bollinger Bands and Contrarian strategies
+- **Error Scenario Testing**: Tests for API failures, invalid parameters, and edge conditions
+
 ## [0.1.0] - 2025-12-26
 
 ### Added

@@ -9,7 +9,7 @@ This library provides a modular framework for:
 - Executing real trades through supported trading providers
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "warspite_financial"
 
 # Import all submodules and dynamically export their contents

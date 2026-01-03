@@ -9,6 +9,7 @@ import sys
 import argparse
 from typing import Optional
 from .cli import WarspiteCLI
+from .. import __version__
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -57,7 +58,7 @@ For more information, visit: https://github.com/warspite-financial/warspite-fina
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 0.1.0'
+        version=f'%(prog)s {__version__}'
     )
     
     parser.add_argument(

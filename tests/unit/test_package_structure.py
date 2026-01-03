@@ -12,7 +12,6 @@ class TestPackageStructure:
         """Test that the main package can be imported."""
         import warspite_financial
         assert hasattr(warspite_financial, '__version__')
-        assert warspite_financial.__version__ == "0.1.0"
     
     def test_base_provider_import(self):
         """Test that BaseProvider can be imported."""
