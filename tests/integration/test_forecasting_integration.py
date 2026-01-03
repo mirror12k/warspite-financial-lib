@@ -208,7 +208,7 @@ class TestForecastingIntegration:
         assert len(csv_data) > 0
         # Check for timestamp-related content (could be 'timestamp', 'date', or index)
         csv_lower = csv_data.lower()
-        assert any(keyword in csv_lower for keyword in ['timestamp', 'date', '2020-', '2021-', '2022-', '2023-', '2024-', '2025-']), f"No timestamp data found in CSV: {csv_data[:200]}"
+        assert any(keyword in csv_lower for keyword in ['timestamp', 'date', '2020-', '2021-', '2022-', '2023-', '2024-', '2025-', '2026-']), f"No timestamp data found in CSV: {csv_data[:200]}"
         
         pickle_data = forecast.serialize(format='pickle')
         assert isinstance(pickle_data, bytes)

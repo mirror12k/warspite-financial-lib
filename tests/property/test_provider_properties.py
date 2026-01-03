@@ -244,6 +244,7 @@ class TestProviderDataStructureConsistency:
         # Skip invalid ranges
         assume(start_date < end_date)
         assume(start_date < datetime.now())
+        assume(end_date < datetime.now())  # Also ensure end_date is in the past
         assume((end_date - start_date).days <= 365 * 10)
         
         # Get data using both methods

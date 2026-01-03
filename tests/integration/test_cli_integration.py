@@ -461,7 +461,8 @@ class TestCLIOANDAIntegration:
             
     def test_cli_oanda_setup_integration(self):
         """Test CLI setup with OANDA provider integration."""
-        with patch('warspite_financial.providers.oanda.OANDAProvider') as mock_oanda_class:
+        with patch('warspite_financial.providers.oanda.OANDAProvider') as mock_oanda_class, \
+             patch.dict('os.environ', {'OANDA_API_TOKEN': 'test_token'}):
             mock_provider = Mock()
             mock_oanda_class.return_value = mock_provider
             
